@@ -1,3 +1,4 @@
-import pandas as pd
-
-a=pd.DataFrame()
+a=5
+for i in range(a):
+    print(i)
+    a=1
