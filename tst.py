@@ -1,4 +1,10 @@
-a=5
-for i in range(a):
-    print(i)
-    a=1
+def aa(a):
+    return a+1
+
+
+@aa
+def pp():
+    return 0
+
+aa()
+
