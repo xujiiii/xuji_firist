@@ -1,4 +1,6 @@
-def aa(a):
+def aa(fuc):
+    def wrapper(*args, **kwargs):
+
     return a+1
 
 

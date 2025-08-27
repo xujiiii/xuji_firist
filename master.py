@@ -1,8 +1,37 @@
-def repeat(n:int):
-    for i in range(n):
-        print('hiiiiii, is it change to github?')
+class Master:
+    def __init__(self):
+        self.filename={}#{file1:[file1:[chunk1,chunk2.chunk3...]]}
+        self.chunk_name={}# nv
+        self.map={} #v
+        #{chunk1:[chunksever1,chunkserver2,chunksever3...]}
+        
+        self.chunksever_space={}#v
+    
+    def start_up(self):
+        pass    
 
 
-class fruit:
-    def __init__(self,name=None):
-        self.name=name
+    def heartbit(self):
+        a=1
+
+
+    def read_file(self,filename,outfit):
+        try:
+            print(1)
+            #find file in filename
+
+        except:
+            print(f'error in finding {filename}')
+            pass
+            #not find file
+
+    def receive_control_client(self,control):
+        #control in ['w','c'] write and create
+
+        pass
+
+
+    def receive_control_server(self,control):
+        pass
+
+aa
