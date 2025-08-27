@@ -25,13 +25,22 @@ class Master:
             pass
             #not find file
 
-    def receive_control_client(self,control):
-        #control in ['w','c'] write and create
-
-        pass
-
-
     def receive_control_server(self,control):
         pass
 
-aa
+    def action(fuc):
+        def wrapper(self,*args, **kwargs):
+            a=fuc(self,*args, **kwargs)
+
+            return a
+        return wrapper
+
+    @action
+    def receive_control_client(self,control):
+        #control in ['w','c'] write and create
+        return control
+    
+
+a=Master()
+
+print(a.receive_control_client('w'))

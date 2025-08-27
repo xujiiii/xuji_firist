@@ -1,12 +1,18 @@
 def aa(fuc):
     def wrapper(*args, **kwargs):
-
-    return a+1
+        a=fuc(*args, **kwargs)+1
+        
+        
+        return a
+    
+    
+    return wrapper
 
 
 @aa
-def pp():
-    return 0
+def pp(a):
 
-aa()
+    return a
+
+print(pp(2))
 
