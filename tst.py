@@ -16,3 +16,6 @@ def pp(a):
 
 print(pp(2))
 
+import re 
+
+print(re.match(r'^cf-[A-Za-z0-9]+-.+','cf-pp-o0:@";o')[0].split('-')[1])

@@ -1,15 +1,19 @@
 import socket
 import threading
+import pickle as pk
+import re
+
 host=socket.gethostname()
-print(host)
+
 class Master:
     def __init__(self,host='192.168.1.42', port=12454):
         #{file1:[file1:[chunk1,chunk2.chunk3...]]} nv
-        self.filename={}
+        self.filename={'aa':0}
         self.chunk_name={}
         #{chunk1:[chunksever1,chunkserver2,chunksever3...]} v
         self.map={} 
-        self.chunksever_space={}
+        self.chunksever_space=set('chunk1','chunk2','chunk3','chunk4')
+        
 
         #设置通讯地址参数,通讯协议，主机，端口
         self.master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,20 +44,33 @@ class Master:
             try:
                 #持续接收client信息并反应
                 msg = conn.recv(1024).decode("utf-8")
+                
+                #1.handle exit
                 if not msg or msg.lower() == "exit":
                     print(f"[断开] {addr} 断开连接")
                     conn.close()
                     del self.clients[addr]
                     break
-
-                self.broadcast(addr,msg)
-                print(f"[{addr}] {msg}")
+                #2.处理create file操作
+                elif re.match(r'^cf-[A-Za-z0-9]+-.+$',msg) is not None:
+                    print('cf control is started')
+                    self.create_file(msg)
+                else:
+                    self.broadcast(addr,msg)
+                    print(f"[{addr}] {msg}")
     
             except ConnectionResetError:
                 print(f"[异常] {addr} 异常断开")
+                del self.clients[addr]
                 conn.close()
                 break
-
+    def create_file(self,data):
+        
+        
+    def check_file(self,conn):
+        conn.send(self.filename.encode('utf-8'))
+    
+    
     def broadcast(self,addr,msg):
         for j in self.clients.keys():
             if j!=addr:

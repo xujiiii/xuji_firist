@@ -1,5 +1,6 @@
 import threading
 import socket
+import pickle as pk
 
 class Client:
     def __init__(self,host="192.168.1.42", port=12454):
