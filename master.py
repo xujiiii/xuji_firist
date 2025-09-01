@@ -3,16 +3,21 @@ import threading
 import pickle as pk
 import re
 
-host=socket.gethostname()
+
+# 获取主机名
+hostname = socket.gethostname()
+
+# 根据主机名解析 IP
+ip_address = socket.gethostbyname(hostname)
 
 class Master:
-    def __init__(self,host='192.168.1.42', port=12454):
+    def __init__(self,host=ip_address, port=12454):
         #{file1:[file1:[chunk1,chunk2.chunk3...]]} nv
         self.filename={'aa':0}
         self.chunk_name={}
         #{chunk1:[chunksever1,chunkserver2,chunksever3...]} v
         self.map={} 
-        self.chunksever_space=set('chunk1','chunk2','chunk3','chunk4')
+        self.chunksever_space=set(['chunk1','chunk2','chunk3','chunk4'])
         
 
         #设置通讯地址参数,通讯协议，主机，端口
@@ -28,7 +33,7 @@ class Master:
         print(f"[启动] 服务器已启动，监听 {self.host}:{self.port}")
         #持续监听用户的连接
         while True:
-            #接受新client
+            #接受新client,没有时会堵塞
             conn, addr = self.master_socket.accept()
             #记录连接用户
             self.clients[addr]=conn
@@ -55,6 +60,10 @@ class Master:
                 elif re.match(r'^cf-[A-Za-z0-9]+-.+$',msg) is not None:
                     print('cf control is started')
                     self.create_file(msg)
+
+                #3.处理read file操作
+                elif re.match(r'^rf-[A-Za-z0-9]+$',msg):
+                    print(f'{addr} is trying to read file')
                 else:
                     self.broadcast(addr,msg)
                     print(f"[{addr}] {msg}")
@@ -64,7 +73,9 @@ class Master:
                 del self.clients[addr]
                 conn.close()
                 break
+
     def create_file(self,data):
+        pass
         
         
     def check_file(self,conn):

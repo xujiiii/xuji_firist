@@ -2,8 +2,14 @@ import threading
 import socket
 import pickle as pk
 
+# 获取主机名
+hostname = socket.gethostname()
+
+# 根据主机名解析 IP
+ip_address = socket.gethostbyname(hostname)
+
 class Client:
-    def __init__(self,host="192.168.1.42", port=12454):
+    def __init__(self,host=ip_address, port=12454):
         self.chunk=[] #[[chunkname,chunkdata,version]]
 
         self.host = host
