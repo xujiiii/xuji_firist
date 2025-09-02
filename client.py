@@ -1,6 +1,6 @@
 import threading
 import socket
-import pickle as pk
+import json
 
 # 获取主机名
 hostname = socket.gethostname()
@@ -31,10 +31,16 @@ class Client:
     def receive_msg(self):
         while True:
             try:
-                data = self.client_socket.recv(1024).decode("utf-8")
+                length = self.client_socket.recv(8)
+                leng=int.from_bytes(length)
+                msg=self.client_socket.recv(leng).decode('utf-8')
+                data=json.loads(msg)
                 if not data:
                     break
-                print(data)
+                if data['type']=='msg':
+                    print(data['data'])
+                elif data['type']=='location':
+                    print(data['chunk_locations'])
             except:
                 break
 
@@ -46,7 +52,23 @@ class Client:
             if msg.lower() == "exit":
                 break
         self.client_socket.close()
-
+    #发送信息
+    def send_message(self):
+        while True:
+            #得到发送的信息
+            msg=input()
+            #将信息制作为json文件
+            metadata = {"type": "msg", "data": msg.encode('utf-8')}
+            data = json.dumps(metadata).encode("utf-8")
+            #先发大小，再发json encode的文件
+            self.client_socket.sendall(len(data).to_bytes(8, "big"))
+            self.client_socket.sendall(data)
+            #退出服务器指令
+            if msg.lower()=='exit':
+                break
+        
+        self.client_socket.close()
+        
 if __name__ == "__main__":
     client = Client()
     client.connect()

@@ -1,6 +1,6 @@
 import socket
 import threading
-import pickle as pk
+import json
 import re
 
 
@@ -14,9 +14,11 @@ class Master:
     def __init__(self,host=ip_address, port=12454):
         #{file1:[file1:[chunk1,chunk2.chunk3...]]} nv
         self.filename=set(['aa'])
-        self.chunk_name={}
-        #{chunk1:[chunksever1,chunkserver2,chunksever3...]} v
+        self.chunk_name={'aa','bb'}
         self.map={'aa':['chunk1','chunk2','chunk3']} 
+        #{chunk1:[chunksever1,chunkserver2,chunksever3...]} v
+        self.chunk_locations={'chunk1':['chunksever2','chunkserver3'],'chunk2':['chunkserver1','chunkserver2'],
+                  'chunk3':['chunksever1','chunkserver3']} 
         self.chunksever_space=set(['chunk1','chunk2','chunk3'])
         
 
@@ -87,22 +89,37 @@ class Master:
     def broadcast(self,addr,msg):
         for j in self.clients.keys():
             if j!=addr:
-                self.clients[j].send(f'{addr}:{msg}'.encode('utf-8'))
+                self.send_message(self.clients[j],f'{addr}:{msg}')
 
 
-    def heartbit(self):
-        a=1
-
+    def send_message(self,conn,msg):
+        #将信息制作为json文件
+        metadata = {"type": "msg", "data": msg}
+        data = json.dumps(metadata)
+        data=data.encode('utf-8')
+        #先发大小，再发json encode的文件
+        conn.sendall(len(data).to_bytes())
+        conn.sendall(data)
+    
+    def response_read_file(self,conn,outfit,filename):
+        #将信息制作为json文件
+        metadata = {"type": "location", 
+                    "chunk_index":outfit,
+                    "filename":filename,
+                    "chunk_handle":self.map[filename],
+                    "chunk_locations":[self.chunk_locations[j] for j in self.map[filename]]}
+        data = json.dumps(metadata)
+        data=data.encode('utf-8')
+        #先发大小，再发json encode的文件
+        conn.sendall(len(data).to_bytes())
+        conn.sendall(data)
 
     def read_file(self,filename,outfit,conn):
-        print(outfit)
-        print(self.filename)
         #find file in filename
         if filename in self.filename:
-            a=f'You can find {filename} in {str(self.map[filename])}'
-            conn.send(a.encode('utf-8'))
+            self.response_read_file(conn,outfit,filename)
         else:
-            conn.send('No such file exist'.encode('utf-8'))
+            self.send_message(conn,'No such file')
         
     def receive_control_server(self,control):
         pass
@@ -138,10 +155,8 @@ class Master:
             return
         
         
-        
-        
-
 
 if __name__ == "__main__":
     server = Master()
     server.start()
+
