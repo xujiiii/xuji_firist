@@ -27,7 +27,7 @@ class Client:
         # 开始发送消息
         self.send_msg()
 
-    # 接收消息
+    # 接收消息,线程一直运行中
     def receive_msg(self):
         while True:
             try:

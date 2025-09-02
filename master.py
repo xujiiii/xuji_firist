@@ -13,11 +13,11 @@ ip_address = socket.gethostbyname(hostname)
 class Master:
     def __init__(self,host=ip_address, port=12454):
         #{file1:[file1:[chunk1,chunk2.chunk3...]]} nv
-        self.filename={'aa':0}
+        self.filename=set(['aa'])
         self.chunk_name={}
         #{chunk1:[chunksever1,chunkserver2,chunksever3...]} v
-        self.map={} 
-        self.chunksever_space=set(['chunk1','chunk2','chunk3','chunk4'])
+        self.map={'aa':['chunk1','chunk2','chunk3']} 
+        self.chunksever_space=set(['chunk1','chunk2','chunk3'])
         
 
         #设置通讯地址参数,通讯协议，主机，端口
@@ -26,10 +26,11 @@ class Master:
         self.port=port
         self.clients={}
 
+    #管理socket的启动和服务器与客户端的通讯
     def start(self):
         #绑定端口 主机，设置最高接受的用户
         self.master_socket.bind((self.host, self.port))
-        self.master_socket.listen(3)
+        self.master_socket.listen(5)
         print(f"[启动] 服务器已启动，监听 {self.host}:{self.port}")
         #持续监听用户的连接
         while True:
@@ -61,9 +62,9 @@ class Master:
                     print('cf control is started')
                     self.create_file(msg)
                 #3.处理read file操作
-                elif re.match(r'^rf-[A-Za-z0-9]+$',msg):
+                elif re.match(r'^rf-[A-Za-z0-9]+-[0-9]+-[0-9]+$',msg):
                     print(f'{addr} is trying to read file')
-                    self.read_file(msg)
+                    self.read_file(msg.split('-')[1],[msg.split('-')[2],msg.split('-')[3]],conn)
                 #4.聊天，并向所有clients广播聊天内容
                 else:
                     self.broadcast(addr,msg)
@@ -93,16 +94,16 @@ class Master:
         a=1
 
 
-    def read_file(self,filename,outfit):
-        try:
-            print(1)
-            #find file in filename
-
-        except:
-            print(f'No file named {filename} exist')
-            pass
-            #not find file
-
+    def read_file(self,filename,outfit,conn):
+        print(outfit)
+        print(self.filename)
+        #find file in filename
+        if filename in self.filename:
+            a=f'You can find {filename} in {str(self.map[filename])}'
+            conn.send(a.encode('utf-8'))
+        else:
+            conn.send('No such file exist'.encode('utf-8'))
+        
     def receive_control_server(self,control):
         pass
 
