@@ -60,10 +60,11 @@ class Master:
                 elif re.match(r'^cf-[A-Za-z0-9]+-.+$',msg) is not None:
                     print('cf control is started')
                     self.create_file(msg)
-
                 #3.处理read file操作
                 elif re.match(r'^rf-[A-Za-z0-9]+$',msg):
                     print(f'{addr} is trying to read file')
+                    self.read_file(msg)
+                #4.聊天，并向所有clients广播聊天内容
                 else:
                     self.broadcast(addr,msg)
                     print(f"[{addr}] {msg}")
@@ -98,7 +99,7 @@ class Master:
             #find file in filename
 
         except:
-            print(f'error in finding {filename}')
+            print(f'No file named {filename} exist')
             pass
             #not find file
 
