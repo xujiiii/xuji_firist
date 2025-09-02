@@ -91,7 +91,7 @@ class Master:
             if j!=addr:
                 self.send_message(self.clients[j],f'{addr}:{msg}')
 
-
+    #basic function to send message to clients
     def send_message(self,conn,msg):
         #将信息制作为json文件
         metadata = {"type": "msg", "data": msg}
@@ -101,6 +101,7 @@ class Master:
         conn.sendall(len(data).to_bytes())
         conn.sendall(data)
     
+    #basic function to send locations and chunk index to clients to help them find chunkservers
     def response_read_file(self,conn,outfit,filename):
         #将信息制作为json文件
         metadata = {"type": "location", 
