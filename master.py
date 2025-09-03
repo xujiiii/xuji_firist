@@ -13,19 +13,28 @@ ip_address = socket.gethostbyname(hostname)
 class Master:
     def __init__(self,host=ip_address, port=12454):
         #{file1:[file1:[chunk1,chunk2.chunk3...]]} nv
-        self.filename=set(['aa'])
-        self.chunk_name={'aa','bb'}
-        self.map={'aa':['chunk1','chunk2','chunk3']} 
+        self.filename=set(['aa','bb'])
+        self.chunk_name={'chunk1','chunk2','chunk3','chunk4','chunk5'}
+        self.map={'aa':['chunk1','chunk2','chunk3'],'bb':['chunk4','chunk5']} 
         #{chunk1:[chunksever1,chunkserver2,chunksever3...]} v
-        self.chunk_locations={'chunk1':['chunksever2','chunkserver3'],'chunk2':['chunkserver1','chunkserver2'],
-                  'chunk3':['chunksever1','chunkserver3']} 
-        self.chunksever_space=set(['chunk1','chunk2','chunk3'])
+        self.chunk_locations={
+                            'chunk1':{'chunkserver2','chunkserver3'},
+                            'chunk2':{'chunkserver1','chunkserver2'},
+                            'chunk3':{'chunkserver1','chunkserver3'},
+                            'chunk4':{'chunkserver1'},
+                            'chunk5':{'chunkserver3'}
+                            } 
         
-
+        self.chunkserver_space={'chunkserver1':'11',
+                               'chunkserver2':"22",
+                               'chunkserver3':"33"
+                               }
+        
         #设置通讯地址参数,通讯协议，主机，端口
         self.master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host=host
         self.port=port
+        #用于记录新用户,{addr:conn}
         self.clients={}
 
     #管理socket的启动和服务器与客户端的通讯
@@ -50,42 +59,46 @@ class Master:
     def handle_client(self, conn, addr):
         while True:
             try:
-                #持续接收client信息并反应
-                msg = conn.recv(1024).decode("utf-8")
-                
-                #1.handle exit
-                if not msg or msg.lower() == "exit":
-                    print(f"[断开] {addr} 断开连接")
-                    conn.close()
-                    del self.clients[addr]
-                    break
-                #2.处理create file操作
-                elif re.match(r'^cf-[A-Za-z0-9]+-.+$',msg) is not None:
-                    print('cf control is started')
-                    self.create_file(msg)
-                #3.处理read file操作
-                elif re.match(r'^rf-[A-Za-z0-9]+-[0-9]+-[0-9]+$',msg):
-                    print(f'{addr} is trying to read file')
-                    self.read_file(msg.split('-')[1],[msg.split('-')[2],msg.split('-')[3]],conn)
-                #4.聊天，并向所有clients广播聊天内容
-                else:
-                    self.broadcast(addr,msg)
-                    print(f"[{addr}] {msg}")
+                #接收长度
+                length = conn.recv(8)
+                leng=int.from_bytes(length)
+                #接受json并转为dict
+                data=conn.recv(leng).decode('utf-8')
+                data=json.loads(data)
+                if data['type']=='msg':
+                    msg=data['data']
+                    #1.handle exit
+                    if not msg or msg.lower() == "exit":
+                        print(f"[断开] {addr} 断开连接")
+                        conn.close()
+                        del self.clients[addr]
+                        break
+                    #2.处理create file操作
+                    elif re.match(r'^cf-[A-Za-z0-9]+-.+$',msg) is not None:
+                        print('cf control is started')
+                        self.create_file(msg)
+                    #3.处理read file操作
+                    elif re.match(r'^rf-[A-Za-z0-9]+-[0-9]+-[0-9]+$',msg):
+                        print(f'{addr} is trying to read file')
+                        self.read_file(msg.split('-')[1],[msg.split('-')[2],msg.split('-')[3]],conn)
+                    #4处理server的注册信息
+                    elif re.match(r'register',msg):
+                        pass
+                    #5.聊天，并向所有clients广播聊天内容
+                    else:
+                        self.broadcast(addr,msg)
+                        print(f"[{addr}] {msg}")
     
+                elif data['type']=='register':
+                    self.heartbeat(conn,addr,data)
+
             except ConnectionResetError:
                 print(f"[异常] {addr} 异常断开")
                 del self.clients[addr]
                 conn.close()
                 break
 
-    def create_file(self,data):
-        pass
-        
-        
-    def check_file(self,conn):
-        conn.send(self.filename.encode('utf-8'))
-    
-    
+    #广播信息to clients
     def broadcast(self,addr,msg):
         for j in self.clients.keys():
             if j!=addr:
@@ -108,13 +121,15 @@ class Master:
                     "chunk_index":outfit,
                     "filename":filename,
                     "chunk_handle":self.map[filename],
-                    "chunk_locations":[self.chunk_locations[j] for j in self.map[filename]]}
+                    "chunk_locations":[list(self.chunk_locations[j]) for j in self.map[filename]],
+                    "action":"read"}
         data = json.dumps(metadata)
         data=data.encode('utf-8')
         #先发大小，再发json encode的文件
-        conn.sendall(len(data).to_bytes())
+        conn.sendall(len(data).to_bytes(8,'big'))
         conn.sendall(data)
 
+    #To check if file exist before response_read_file
     def read_file(self,filename,outfit,conn):
         #find file in filename
         if filename in self.filename:
@@ -122,8 +137,11 @@ class Master:
         else:
             self.send_message(conn,'No such file')
         
-    def receive_control_server(self,control):
-        pass
+    #heartbeat
+    def heartbeat(self,conn,addr,data):
+        for chunk in data['chunks']:
+            self.chunk_locations[chunk].add(data["name"])
+            self.chunkserver_space[data["name"]]=addr
 
     def log(fuc):
         def wrapper(self,*args, **kwargs):

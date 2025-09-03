@@ -31,41 +31,38 @@ class Client:
     def receive_msg(self):
         while True:
             try:
+                #接收长度
                 length = self.client_socket.recv(8)
                 leng=int.from_bytes(length)
+                #接受json并转为dict
                 msg=self.client_socket.recv(leng).decode('utf-8')
                 data=json.loads(msg)
+                #根据json类型分类操作
                 if not data:
                     break
                 if data['type']=='msg':
                     print(data['data'])
                 elif data['type']=='location':
-                    print(data['chunk_locations'])
+                    print(data)
             except:
                 break
 
-    # 发送消息
+    #发送消息
     def send_msg(self):
-        while True:
-            msg = input()
-            self.client_socket.send(msg.encode("utf-8"))
-            if msg.lower() == "exit":
-                break
-        self.client_socket.close()
-    #发送信息
-    def send_message(self):
         while True:
             #得到发送的信息
             msg=input()
             #将信息制作为json文件
-            metadata = {"type": "msg", "data": msg.encode('utf-8')}
-            data = json.dumps(metadata).encode("utf-8")
-            #先发大小，再发json encode的文件
-            self.client_socket.sendall(len(data).to_bytes(8, "big"))
-            self.client_socket.sendall(data)
-            #退出服务器指令
-            if msg.lower()=='exit':
-                break
+            if 1==1:
+                metadata = {"type": "msg", "data": msg}
+                data = json.dumps(metadata)
+                data =data.encode('utf-8')
+                #先发大小，再发json encode的文件
+                self.client_socket.sendall(len(data).to_bytes(8, "big"))
+                self.client_socket.sendall(data)
+                #退出服务器指令
+                if msg.lower()=='exit':
+                    break
         
         self.client_socket.close()
         
