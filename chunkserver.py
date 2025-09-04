@@ -80,7 +80,6 @@ class Server:
     #发送注册信息和心跳状态给服务器
     @heartbeat_start
     def heartbeat(self):
-        
         while True:
             #心跳时间
             time.sleep(3)
