@@ -78,17 +78,9 @@ class Server:
         return wrapper
     
     #发送注册信息和心跳状态给服务器
-    #@heartbeat_start
+    @heartbeat_start
     def heartbeat(self):
-        metadata = {
-                "type": "register_heartbeat", 
-                "name":'chunkserver88',
-                "chunks":self.chunk
-                }
-        data = json.dumps(metadata)
-        data =data.encode('utf-8')
-        self.master.sendall(len(data).to_bytes(8, "big"))
-        self.master.sendall(data)
+        
         while True:
             #心跳时间
             time.sleep(3)
