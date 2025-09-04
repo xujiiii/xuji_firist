@@ -3,16 +3,16 @@ import socket
 import json
 import time
 
-# 获取主机名
+# 获取主机名.
 hostname = socket.gethostname()
 
 # 根据主机名解析 IP
 ip_address = socket.gethostbyname(hostname)
 
 class Server:
-    def __init__(self,host=ip_address, port_master=12454,port_server=12222):
+    def __init__(self,name,host=ip_address, port_master=12454,port_server=12222):
         #name to identify this server
-        self.name='chunkserver88'
+        self.name=name
         #which chunks have in this server
         self.chunk=['chunk5','chunk4'] #[[chunkname,chunkdata,version]]
 
@@ -57,9 +57,38 @@ class Server:
                 
             except:
                 break
+    
+    #先发送给服务器，让服务器启动心跳机制，再定期发送心跳注册给服务器，该函数用于添加启动心跳机制功能到原心跳函数中
+    def heartbeat_start(fuc):
+        def wrapper(self,*args, **kwargs):
+            #注册信息制作并发送
+            metadata = {
+                "type": "register_heartbeat", 
+                "name":'chunkserver88',
+                "chunks":self.chunk
+                }
+            data = json.dumps(metadata)
+            data =data.encode('utf-8')
+            self.master.sendall(len(data).to_bytes(8, "big"))
+            self.master.sendall(data)
 
+            a=fuc(self,*args, **kwargs)
+            return a
+        
+        return wrapper
+    
     #发送注册信息和心跳状态给服务器
+    #@heartbeat_start
     def heartbeat(self):
+        metadata = {
+                "type": "register_heartbeat", 
+                "name":'chunkserver88',
+                "chunks":self.chunk
+                }
+        data = json.dumps(metadata)
+        data =data.encode('utf-8')
+        self.master.sendall(len(data).to_bytes(8, "big"))
+        self.master.sendall(data)
         while True:
             #心跳时间
             time.sleep(3)
@@ -80,5 +109,5 @@ class Server:
         self.master.close()
         
 if __name__ == "__main__":
-    server = Server()
+    server = Server('chunkserver88')
     server.start()

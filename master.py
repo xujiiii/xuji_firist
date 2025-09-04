@@ -2,9 +2,9 @@ import socket
 import threading
 import json
 import re
+import time
 
-
-# 获取主机名
+# 获取主机名.
 hostname = socket.gethostname()
 
 # 根据主机名解析 IP
@@ -29,6 +29,8 @@ class Master:
                                'chunkserver2':"22",
                                'chunkserver3':"33"
                                }
+        
+        self.heart_record={'chunkserver1':100}
         
         #设置通讯地址参数,通讯协议，主机，端口
         self.master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -90,7 +92,13 @@ class Master:
                         print(f"[{addr}] {msg}")
     
                 elif data['type']=='register':
-                    self.heartbeat(conn,addr,data)
+                    self.register(conn,addr,data)
+
+                elif data['type']=='register_heartbeat':
+                    #thread 一定要加，不然心跳注册的time sleep会让整个程序停止，导致错误，所以需要再弄一个thread单独执行心跳
+                    thread = threading.Thread(target=self.register_heartbeat,
+                                              args=(conn, addr,data))
+                    thread.start()
 
             except ConnectionResetError:
                 print(f"[异常] {addr} 异常断开")
@@ -136,12 +144,32 @@ class Master:
             self.response_read_file(conn,outfit,filename)
         else:
             self.send_message(conn,'No such file')
-        
-    #heartbeat
-    def heartbeat(self,conn,addr,data):
+
+    #注册心跳机制，为每一个server启动单独计时的心跳机制服务    
+    def register_heartbeat(self,conn,addr,data):
         for chunk in data['chunks']:
             self.chunk_locations[chunk].add(data["name"])
             self.chunkserver_space[data["name"]]=addr
+            self.heart_record[data['name']]=time.time()
+        while True:
+            a=time.time()-self.heart_record[data["name"]]
+            print(a)
+            if a>8:
+                for chunk in data['chunks']:
+                    self.chunk_locations[chunk].discard(data['name'])
+                del self.chunkserver_space[data['name']]
+                break
+            time.sleep(10)
+
+        print(f'{addr} server is losing and heartbeat break')
+
+    #accept register information from chunkserver in start and each heartbeat from server
+    def register(self,conn,addr,data):
+        for chunk in data['chunks']:
+            self.chunk_locations[chunk].add(data["name"])
+            self.chunkserver_space[data["name"]]=addr
+        self.heart_record[data['name']]=time.time()
+        print(f"{addr} is registering")
 
     def log(fuc):
         def wrapper(self,*args, **kwargs):
