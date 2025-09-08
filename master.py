@@ -124,13 +124,15 @@ class Master:
     
     #basic function to send locations and chunk index to clients to help them find chunkservers
     def response_read_file(self,conn,outfit,filename):
+        self.send_server_location(conn)
         #将信息制作为json文件
-        metadata = {"type": "location", 
+        metadata = {"type": "file_information", 
                     "chunk_index":outfit,
                     "filename":filename,
                     "chunk_handle":self.map[filename],
                     "chunk_locations":[list(self.chunk_locations[j]) for j in self.map[filename]],
-                    "action":"read"}
+                    "action":"read"
+                    }
         data = json.dumps(metadata)
         data=data.encode('utf-8')
         #先发大小，再发json encode的文件
@@ -144,6 +146,16 @@ class Master:
             self.response_read_file(conn,outfit,filename)
         else:
             self.send_message(conn,'No such file')
+
+    def send_server_location(self,conn):
+        #将信息制作为json文件
+        metadata = self.chunkserver_space
+        metadata['type']="servers_location"
+        data = json.dumps(metadata)
+        data=data.encode('utf-8')
+        #先发大小，再发json encode的文件
+        conn.sendall(len(data).to_bytes(8,'big'))
+        conn.sendall(data)
 
     #注册心跳机制，为每一个server启动单独计时的心跳机制服务    
     def register_heartbeat(self,conn,addr,data):
@@ -171,6 +183,7 @@ class Master:
         self.heart_record[data['name']]=time.time()
         print(f"{addr} is registering")
 
+    #Below function is unfinished
     def log(fuc):
         def wrapper(self,*args, **kwargs):
             fuc(self,*args, **kwargs)
@@ -186,22 +199,6 @@ class Master:
             return a
         
         return wrapper #包装后的函数
-
-    @permition
-    def receive_client(self,filename,outfit):
-        #filename 和想看file的范围，即outfit(4,9)file的第4和9字节
-
-        if filename in self.filename:
-            pass
-        else:
-            print('error')
-    
-    def create(self,filename,data):
-        if filename in self.filename:
-            print('file exsists')
-            return
-        
-        
 
 if __name__ == "__main__":
     server = Master()

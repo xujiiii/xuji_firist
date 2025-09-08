@@ -11,7 +11,6 @@ ip_address = socket.gethostbyname(hostname)
 class Client:
     def __init__(self,host=ip_address, port=12454):
         self.chunk=[] #[[chunkname,chunkdata,version]]
-
         self.host = host
         self.port = port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,10 +41,22 @@ class Client:
                     break
                 if data['type']=='msg':
                     print(data['data'])
-                elif data['type']=='location':
-                    print(data)
+                elif data['type']=='file_information':
+                    self.action(data)
+                elif data["type"]=='servers_location':
+                    #model the process of store communication address in cache
+                    self.servers_location=data
+                elif data["type"]=="information_from_servers":
+                    pass
+
             except:
                 break
+    
+    #Do the corresponding action indicates by data,like after receive from master, thn connect servers with informationin data
+    def action(self,data):
+        print("action starts based on data")
+        print(data)
+        pass
 
     #发送消息
     def send_msg(self):

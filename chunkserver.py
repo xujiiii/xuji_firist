@@ -55,6 +55,7 @@ class Server:
                 elif data['type']=='location':
                     print(data)
                 
+                
             except:
                 break
     
