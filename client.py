@@ -14,6 +14,7 @@ class Client:
         self.host = host
         self.port = port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.chunkserver_space={}
 
     # 连接服务器
     def connect(self):
@@ -36,16 +37,18 @@ class Client:
                 #接受json并转为dict
                 msg=self.client_socket.recv(leng).decode('utf-8')
                 data=json.loads(msg)
-                #根据json类型分类操作
+                #根据json类型分类操作 
                 if not data:
                     break
                 if data['type']=='msg':
                     print(data['data'])
+                #receive file informations from master and do action indicated by the data
                 elif data['type']=='file_information':
                     self.action(data)
+                #model the process of store communication address in cache
                 elif data["type"]=='servers_location':
-                    #model the process of store communication address in cache
                     self.servers_location=data
+                    print(f"servers location is {self.servers_location}")
                 elif data["type"]=="information_from_servers":
                     pass
 
@@ -56,8 +59,24 @@ class Client:
     def action(self,data):
         print("action starts based on data")
         print(data)
-        pass
+        dt=""
+        if data["action"]=="read":
+            for i in len(data["chunk_handle"]):
+                for sv in data["chunk_locations"][i]:
+                    metadata = {"type": "clients"}
+                    data = json.dumps(metadata)
+                    data =data.encode('utf-8')
+                    #先发大小，再发json encode的文件
+                    sv_conn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sv_conn.connect((self.chunkserver_space[sv].split(":")[0],
+                                     self.chunkserver_space[sv].split(":")[1]))
+                    
+                    sv_conn.sendall(len(data).to_bytes(8, "big"))
+                    sv_conn.sendall(data)
+                    sv_conn.close()
+            
 
+        
     #发送消息
     def send_msg(self):
         while True:

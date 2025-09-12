@@ -31,7 +31,4 @@ ip_address = socket.gethostbyname(hostname)
 print(f"本机主机名: {hostname}")
 print(f"本机 IPv4 地址: {ip_address}")
 
-import time
-a=time.time()
-time.sleep(5)
-print(type(time.time()-a))
+print(len([[],[]]))

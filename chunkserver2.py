@@ -10,11 +10,11 @@ hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 
 class Server:
-    def __init__(self,name,host=ip_address, port_master=12454,port_server=12222):
+    def __init__(self,name,chunk,port_server:int,host=ip_address,port_master=12454):
         #name to identify this server
         self.name=name
         #which chunks have in this server
-        self.chunk=['chunk5','chunk4'] #[[chunkname,chunkdata,version]]
+        self.chunk=chunk #[[chunkname,chunkdata,version]]
 
         #set the socket for connecting master and listenning clients
         self.host=host
@@ -33,7 +33,7 @@ class Server:
         thread1.start()
 
         self.server.bind(self.host,self.port_server)
-        self.server.listen(5)
+        self.server.listen(10)
         print(f"[启动] server已启动,监听 {self.host}:{self.port_server}")
         thread2 = threading.Thread(target=self.receive_msg())
         thread2.daemon = True
@@ -65,7 +65,7 @@ class Server:
             #注册信息制作并发送
             metadata = {
                 "type": "register_heartbeat", 
-                "name":'chunkserver88',
+                "name":self.name,
                 "chunks":self.chunk
                 }
             data = json.dumps(metadata)
@@ -87,7 +87,7 @@ class Server:
             #将信息制作为json文件
             metadata = {
                 "type": "register", 
-                "name":'chunkserver88',
+                "name":self.name,
                 "chunks":self.chunk
                 }
             data = json.dumps(metadata)
@@ -97,9 +97,10 @@ class Server:
             self.master.sendall(data)
             
         
-        
         self.master.close()
         
 if __name__ == "__main__":
-    server = Server('chunkserver88')
+    server=Server('chunkserver2',['chunk1','chunk2','chunk3'],12222)
     server.start()
+
+    

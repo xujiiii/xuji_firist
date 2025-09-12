@@ -7,7 +7,7 @@ import time
 # 获取主机名.
 hostname = socket.gethostname()
 
-# 根据主机名解析 IP
+# 根据主机名解析 IP 
 ip_address = socket.gethostbyname(hostname)
 
 class Master:
@@ -18,19 +18,17 @@ class Master:
         self.map={'aa':['chunk1','chunk2','chunk3'],'bb':['chunk4','chunk5']} 
         #{chunk1:[chunksever1,chunkserver2,chunksever3...]} v
         self.chunk_locations={
-                            'chunk1':{'chunkserver2','chunkserver3'},
-                            'chunk2':{'chunkserver1','chunkserver2'},
-                            'chunk3':{'chunkserver1','chunkserver3'},
-                            'chunk4':{'chunkserver1'},
-                            'chunk5':{'chunkserver3'}
+                            'chunk1':set(),
+                            'chunk2':set(),
+                            'chunk3':set(),
+                            'chunk4':set(),
+                            'chunk5':set()
                             } 
         
-        self.chunkserver_space={'chunkserver1':'11',
-                               'chunkserver2':"22",
-                               'chunkserver3':"33"
+        self.chunkserver_space={
                                }
         
-        self.heart_record={'chunkserver1':100}
+        self.heart_record={}
         
         #设置通讯地址参数,通讯协议，主机，端口
         self.master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,7 +41,7 @@ class Master:
     def start(self):
         #绑定端口 主机，设置最高接受的用户
         self.master_socket.bind((self.host, self.port))
-        self.master_socket.listen(5)
+        self.master_socket.listen(10)
         print(f"[启动] 服务器已启动，监听 {self.host}:{self.port}")
         #持续监听用户的连接
         while True:
@@ -56,7 +54,6 @@ class Master:
             thread = threading.Thread(target=self.handle_client, args=(conn, addr))
             thread.start()
             print(f"[活跃连接] {threading.active_count() - 1} 个客户端")
-
 
     def handle_client(self, conn, addr):
         while True:
@@ -165,7 +162,7 @@ class Master:
             self.heart_record[data['name']]=time.time()
         while True:
             a=time.time()-self.heart_record[data["name"]]
-            print(a)
+            #print(a)
             if a>8:
                 for chunk in data['chunks']:
                     self.chunk_locations[chunk].discard(data['name'])
@@ -177,9 +174,9 @@ class Master:
 
     #accept register information from chunkserver in start and each heartbeat from server
     def register(self,conn,addr,data):
+        self.chunkserver_space[data["name"]]=addr[0]+":"+str(data['location'])
         for chunk in data['chunks']:
             self.chunk_locations[chunk].add(data["name"])
-            self.chunkserver_space[data["name"]]=addr
         self.heart_record[data['name']]=time.time()
         print(f"{addr} is registering")
 
