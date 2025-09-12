@@ -55,28 +55,13 @@ class Client:
             except:
                 break
     
-    #Do the corresponding action indicates by data,like after receive from master, thn connect servers with informationin data
+    #Do the corresponding action indicates by data,like after receive from master, thn connect,
+    #this is processing, uncompleted
     def action(self,data):
         print("action starts based on data")
         print(data)
-        dt=""
-        if data["action"]=="read":
-            for i in len(data["chunk_handle"]):
-                for sv in data["chunk_locations"][i]:
-                    metadata = {"type": "clients"}
-                    data = json.dumps(metadata)
-                    data =data.encode('utf-8')
-                    #先发大小，再发json encode的文件
-                    sv_conn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    sv_conn.connect((self.chunkserver_space[sv].split(":")[0],
-                                     self.chunkserver_space[sv].split(":")[1]))
-                    
-                    sv_conn.sendall(len(data).to_bytes(8, "big"))
-                    sv_conn.sendall(data)
-                    sv_conn.close()
-            
-
         
+            
     #发送消息
     def send_msg(self):
         while True:
