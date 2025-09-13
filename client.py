@@ -14,7 +14,7 @@ class Client:
         self.host = host
         self.port = port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.chunkserver_space={}
+        self.servers_location={}
 
     # 连接服务器
     def connect(self):
@@ -37,7 +37,7 @@ class Client:
                 #接受json并转为dict
                 msg=self.client_socket.recv(leng).decode('utf-8')
                 data=json.loads(msg)
-                #根据json类型分类操作 
+                #根据json类型分类操作  
                 if not data:
                     break
                 if data['type']=='msg':
@@ -60,9 +60,27 @@ class Client:
     def action(self,data):
         print("action starts based on data")
         print(data)
+        print(self.servers_location)
+        for i in data['chunk_locations']:
+            for j in i:
+                tem_conn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                tem_conn.connect((self.servers_location[j].split(":")[0],
+                                  int(self.servers_location[j].split(":")[1])))
+                metadata = {"type": "clients", "data": "hii"}
+                data = json.dumps(metadata)
+                data =data.encode('utf-8')
+                #先发大小，再发json encode的文件
+                tem_conn.sendall(len(data).to_bytes(8, "big"))
+                tem_conn.sendall(data)
+                length = tem_conn.recv(8)
+                leng=int.from_bytes(length)
+                #接受json并转为dict
+                msg=tem_conn.recv(leng).decode('utf-8')
+                data=json.loads(msg)
+                print(data)
+                tem_conn.close()
         
-            
-    #发送消息
+    #发送消息to master
     def send_msg(self):
         while True:
             #得到发送的信息

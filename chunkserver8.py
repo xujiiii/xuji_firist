@@ -15,7 +15,6 @@ class Server:
         self.name=name
         #which chunks have in this server
         self.chunk=chunk #[[chunkname,chunkdata,version]]
-
         #set the socket for connecting master and listenning clients
         self.host=host
         self.port_master=port_master
@@ -25,7 +24,9 @@ class Server:
         
         #data of chunk
         self.datas={'chunk5':"hello","chunk4":"brilliant",'chunk3':"peppa pig"}
-    
+        #address of clients visited before
+        self.clients={}
+
     #start two thread to deal with connections to master and clients separately 
     def start(self):
         self.master.connect((self.host, self.port_master))
@@ -34,7 +35,7 @@ class Server:
         thread1 = threading.Thread(target=self.heartbeat)
         thread1.daemon = True
         thread1.start()
-        
+        #start the listenning process
         self.server.bind((self.host,self.port_server))
         self.server.listen(10)
         print(f"[启动] server已启动,监听 {self.host}:{self.port_server}")
@@ -46,14 +47,27 @@ class Server:
         while True:
             a=input()
 
-        
-    # 接收clients消息,线程一直运行中
+    # 接收clients消息,线程一直运行中 
     def receive_msg(self):
+
+        while True:
+            #接受新client,没有时会堵塞
+            conn, addr = self.server.accept()
+            #记录连接用户
+            self.clients[addr]=conn
+            print(f"[新连接] {addr} 已连接")
+            #thread将接收的参数投入handle_client参数，成为新线程
+            thread = threading.Thread(target=self.handle_clients, args=(conn, addr))
+            thread.start()
+            print(f"[活跃连接] {threading.active_count() - 1} 个客户端")
+    
+    #handle information from clients
+    def handle_clients(self,conn,addr):     
         while True:
             try:
-                length = self.server.recv(8)
+                length = conn.recv(8)
                 leng=int.from_bytes(length)
-                msg=self.server.recv(leng).decode('utf-8')
+                msg=conn.recv(leng).decode('utf-8')
                 data=json.loads(msg)
                 if not data:
                     break
@@ -62,12 +76,20 @@ class Server:
                 elif data['type']=='location':
                     print(data)
                 elif data['type']=='clients':
-                    print("clients visited")
+                    self.action_clients(conn,addr)
                     pass
                 
             except:
                 break
     
+    def action_clients(self,conn,addr):
+        metadata = {"type": "msg", "data": "hiii i am server"}
+        data = json.dumps(metadata)
+        data =data.encode('utf-8')
+        #先发大小，再发json encode的文件
+        conn.sendall(len(data).to_bytes(8, "big"))
+        conn.sendall(data)
+        
     #先发送给服务器，让服务器启动心跳机制，再定期发送心跳注册给服务器，该函数用于添加启动心跳机制功能到原心跳函数中
     def heartbeat_start(fuc):
         def wrapper(self,*args, **kwargs):

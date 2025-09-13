@@ -4,7 +4,7 @@ import json
 import re
 import time
 
-# 获取主机名.
+# 获取主机名. 
 hostname = socket.gethostname()
 
 # 根据主机名解析 IP 
