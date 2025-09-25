@@ -4,10 +4,10 @@ import json
 import re
 import time
 
-# 获取主机名. 
+#gain hostname
 hostname = socket.gethostname()
 
-# 根据主机名解析 IP 
+#gain IP from hostnem 
 ip_address = socket.gethostbyname(hostname)
 
 class Master:
@@ -34,23 +34,23 @@ class Master:
         self.master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host=host
         self.port=port
-        #用于记录新用户,{addr:conn}
+        #{addr:conn} used to record new users
         self.clients={}
 
-    #管理socket的启动和服务器与客户端的通讯
+    #start the master
     def start(self):
-        #绑定端口 主机，设置最高接受的用户
+        #basic setting for master socket
         self.master_socket.bind((self.host, self.port))
         self.master_socket.listen(10)
         print(f"[启动] 服务器已启动，监听 {self.host}:{self.port}")
-        #持续监听用户的连接
+        #continues to listennning
         while True:
-            #接受新client,没有时会堵塞
+            #accept new clients
             conn, addr = self.master_socket.accept()
-            #记录连接用户
+            #record clients
             self.clients[addr]=conn
             print(f"[新连接] {addr} 已连接")
-            #thread将接收的参数投入handle_client参数，成为新线程
+            #handle each client in a new thread
             thread = threading.Thread(target=self.handle_client, args=(conn, addr))
             thread.start()
             print(f"[活跃连接] {threading.active_count() - 1} 个客户端")
@@ -154,7 +154,7 @@ class Master:
         conn.sendall(len(data).to_bytes(8,'big'))
         conn.sendall(data)
 
-    #注册心跳机制，为每一个server启动单独计时的心跳机制服务    
+    #Register the heartbeat mechanism and start a separate timing heartbeat mechanism service for each server  
     def register_heartbeat(self,conn,addr,data):
         for chunk in data['chunks']:
             self.chunk_locations[chunk].add(data["name"])
@@ -180,22 +180,23 @@ class Master:
         self.heart_record[data['name']]=time.time()
         print(f"{addr} is registering")
 
-    #Below function is unfinished
+    #Todo
     def log(fuc):
         def wrapper(self,*args, **kwargs):
             fuc(self,*args, **kwargs)
 
             return fuc(self,*args, **kwargs)
         
-        return wrapper #包装后的函数
+        return wrapper 
 
+    #Todo
     def permition(fuc):
         def wrapper(self,*args, **kwargs):
             a=fuc(self,*args, **kwargs)
 
             return a
         
-        return wrapper #包装后的函数
+        return wrapper
 
 if __name__ == "__main__":
     server = Master()
